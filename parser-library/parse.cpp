@@ -29,11 +29,10 @@ THE SOFTWARE.
 #include "to_string.h"
 
 using namespace std;
-using namespace boost;
 
 struct section {
   string                sectionName;
-  ::uint64_t            sectionBase;
+  uint64_t              sectionBase;
   bounded_buffer        *sectionData;
   image_section_header  sec;
 };
@@ -63,8 +62,8 @@ struct parsed_pe_internal {
   list<exportent> exports;
 };
 
-::uint32_t err = 0;
-std::string err_loc;
+uint32_t err = 0;
+string err_loc;
 
 static const char *pe_err_str[] = {
   "None",
@@ -97,9 +96,9 @@ bool getSecForVA(list<section> &secs, VA v, section &sec) {
       ++it)
   {
     section s = *it;
-  
-    ::uint64_t  low = s.sectionBase;
-    ::uint64_t  high = low + s.sec.Misc.VirtualSize;
+
+    uint64_t  low = s.sectionBase;
+    uint64_t  high = low + s.sec.Misc.VirtualSize;
 
     if(v >= low && v < high) {
       sec = s;
@@ -126,14 +125,14 @@ void IterRsrc(parsed_pe *pe, iterRsrc cb, void *cbd) {
   return;
 }
 
-bool parse_resource_id(bounded_buffer *data, ::uint32_t id, string &result) {
-  ::uint8_t c;
-  ::uint16_t len;
+bool parse_resource_id(bounded_buffer *data, uint32_t id, string &result) {
+  uint8_t c;
+  uint16_t len;
 
   if (readWord(data, id, len) == false)
     return false;
   id += 2;
-  for (::uint32_t i = 0; i < len * 2; i++) {
+  for (uint32_t i = 0; i < len * 2; i++) {
     if(readByte(data, id + i, c) == false)
       return false;
     result.push_back((char) c);
@@ -141,8 +140,8 @@ bool parse_resource_id(bounded_buffer *data, ::uint32_t id, string &result) {
   return true;
 }
 
-bool parse_resource_table(bounded_buffer *sectionData, ::uint32_t o, ::uint32_t virtaddr, ::uint32_t depth, resource_dir_entry *dirent, list<resource> &rsrcs) {
-  ::uint32_t i = 0;
+bool parse_resource_table(bounded_buffer *sectionData, uint32_t o, uint32_t virtaddr, uint32_t depth, resource_dir_entry *dirent, list<resource> &rsrcs) {
+  uint32_t i = 0;
   resource_dir_table rdt;
 
   if (!sectionData)
@@ -282,20 +281,20 @@ bool getResources(bounded_buffer *b, bounded_buffer *fileBegin, list<section> se
   return true;
 }
 
-bool getSections( bounded_buffer  *b, 
+bool getSections( bounded_buffer  *b,
                   bounded_buffer  *fileBegin,
-                  nt_header_32    &nthdr, 
+                  nt_header_32    &nthdr,
                   list<section>   &secs) {
   if(b == NULL) {
     return false;
   }
 
   //get each of the sections...
-  for(::uint32_t i = 0; i < nthdr.FileHeader.NumberOfSections; i++) {
+  for(uint32_t i = 0; i < nthdr.FileHeader.NumberOfSections; i++) {
     image_section_header  curSec;
-    
-    ::uint32_t  o = i*sizeof(image_section_header);
-    for(::uint32_t k = 0; k < NT_SHORT_NAME_LEN; k++) {
+
+    uint32_t  o = i*sizeof(image_section_header);
+    for(uint32_t k = 0; k < NT_SHORT_NAME_LEN; k++) {
       if(readByte(b, o+k, curSec.Name[k]) == false) {
         return false;
       }
@@ -311,11 +310,11 @@ bool getSections( bounded_buffer  *b,
     READ_WORD(b, o, curSec, NumberOfLinenumbers);
     READ_DWORD(b, o, curSec, Characteristics);
 
-    //now we have the section header information, so fill in a section 
+    //now we have the section header information, so fill in a section
     //object appropriately
     section thisSec;
-    for(::uint32_t i = 0; i < NT_SHORT_NAME_LEN; i++) {
-      ::uint8_t c = curSec.Name[i];
+    for(uint32_t i = 0; i < NT_SHORT_NAME_LEN; i++) {
+      uint8_t c = curSec.Name[i];
       if(c == 0) {
         break;
       }
@@ -332,10 +331,10 @@ bool getSections( bounded_buffer  *b,
     }
 
     thisSec.sec = curSec;
-    ::uint32_t  lowOff = curSec.PointerToRawData;
-    ::uint32_t  highOff = lowOff+curSec.SizeOfRawData;
+    uint32_t  lowOff = curSec.PointerToRawData;
+    uint32_t  highOff = lowOff+curSec.SizeOfRawData;
     thisSec.sectionData = splitBuffer(fileBegin, lowOff, highOff);
-    
+
     secs.push_back(thisSec);
   }
 
@@ -375,10 +374,10 @@ bool readOptionalHeader(bounded_buffer *b, optional_header_32 &header) {
   READ_DWORD(b, 0, header, LoaderFlags);
   READ_DWORD(b, 0, header, NumberOfRvaAndSizes);
 
-  for(::uint32_t i = 0; i < header.NumberOfRvaAndSizes; i++) {
-    ::uint32_t  c = (i*sizeof(data_directory));
+  for(uint32_t i = 0; i < header.NumberOfRvaAndSizes; i++) {
+    uint32_t  c = (i*sizeof(data_directory));
     c+= _offset(optional_header_32, DataDirectory[0]);
-    ::uint32_t  o; 
+    uint32_t  o;
 
     o = c + _offset(data_directory, VirtualAddress);
     if(readDword(b, o, header.DataDirectory[i].VirtualAddress) == false) {
@@ -426,10 +425,10 @@ bool readOptionalHeader64(bounded_buffer *b, optional_header_64 &header) {
   READ_DWORD(b, 0, header, LoaderFlags);
   READ_DWORD(b, 0, header, NumberOfRvaAndSizes);
 
-  for(::uint32_t i = 0; i < header.NumberOfRvaAndSizes; i++) {
-    ::uint32_t  c = (i*sizeof(data_directory));
+  for(uint32_t i = 0; i < header.NumberOfRvaAndSizes; i++) {
+    uint32_t  c = (i*sizeof(data_directory));
     c += _offset(optional_header_64, DataDirectory[0]);
-    ::uint32_t  o;
+    uint32_t  o;
 
     o = c + _offset(data_directory, VirtualAddress);
     if(readDword(b, o, header.DataDirectory[i].VirtualAddress) == false) {
@@ -462,17 +461,17 @@ bool readNtHeader(bounded_buffer *b, nt_header_32 &header) {
     return false;
   }
 
-  ::uint32_t  pe_magic;
-  ::uint32_t  curOffset =0;
+  uint32_t  pe_magic;
+  uint32_t  curOffset =0;
   if(readDword(b, curOffset, pe_magic) == false || pe_magic != NT_MAGIC) {
     PE_ERR(PEERR_READ);
     return false;
   }
 
   header.Signature = pe_magic;
-  bounded_buffer  *fhb = 
+  bounded_buffer  *fhb =
     splitBuffer(b, _offset(nt_header_32, FileHeader), b->bufLen);
-  
+
   if(fhb == NULL) {
     PE_ERR(PEERR_MEM);
     return false;
@@ -488,7 +487,7 @@ bool readNtHeader(bounded_buffer *b, nt_header_32 &header) {
    * out to be a PE32+. The start of the buffer is at the same spot in the
    * buffer regardless.
    */
-  bounded_buffer *ohb = 
+  bounded_buffer *ohb =
     splitBuffer(b, _offset(nt_header_32, OptionalHeader), b->bufLen);
 
   if(ohb == NULL) {
@@ -533,8 +532,8 @@ bool getHeader(bounded_buffer *file, pe_header &p, bounded_buffer *&rem) {
   }
 
   //start by reading MZ
-  ::uint16_t  tmp = 0;
-  ::uint32_t  curOffset = 0;
+  uint16_t  tmp = 0;
+  uint32_t  curOffset = 0;
   if(readWord(file, curOffset, tmp) == false) {
     PE_ERR(PEERR_READ);
     return false;
@@ -545,12 +544,12 @@ bool getHeader(bounded_buffer *file, pe_header &p, bounded_buffer *&rem) {
   }
 
   //read the offset to the NT headers
-  ::uint32_t  offset;
+  uint32_t  offset;
   if(readDword(file, _offset(dos_header, e_lfanew), offset) == false) {
     PE_ERR(PEERR_READ);
     return false;
   }
-  curOffset += offset; 
+  curOffset += offset;
 
   //now, we can read out the fields of the NT headers
   bounded_buffer  *ntBuf = splitBuffer(file, curOffset, file->bufLen);
@@ -563,13 +562,13 @@ bool getHeader(bounded_buffer *file, pe_header &p, bounded_buffer *&rem) {
    * Need to determine if this is a PE32 or PE32+ binary and use the
    # correct size.
    */
-  ::uint32_t rem_size;
+  uint32_t rem_size;
   if (p.nt.OptionalMagic == NT_OPTIONAL_32_MAGIC) {
     // signature + file_header + optional_header_32
-    rem_size = sizeof(::uint32_t) + sizeof(file_header) + sizeof(optional_header_32);
+    rem_size = sizeof(uint32_t) + sizeof(file_header) + sizeof(optional_header_32);
   } else if (p.nt.OptionalMagic == NT_OPTIONAL_64_MAGIC) {
     // signature + file_header + optional_header_64
-    rem_size = sizeof(::uint32_t) + sizeof(file_header) + sizeof(optional_header_64);
+    rem_size = sizeof(uint32_t) + sizeof(file_header) + sizeof(optional_header_64);
   } else {
     PE_ERR(PEERR_MAGIC);
     return false;
@@ -591,7 +590,7 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
     return NULL;
   }
 
-  //make a new buffer object to hold just our file data 
+  //make a new buffer object to hold just our file data
   p->fileBuffer = readFileToFileBuffer(filePath);
 
   if(p->fileBuffer == NULL) {
@@ -663,13 +662,13 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
       return NULL;
     }
 
-    ::uint32_t  rvaofft = addr - s.sectionBase;
+    uint32_t  rvaofft = addr - s.sectionBase;
 
     //get the name of this module
-    ::uint32_t  nameRva;
+    uint32_t  nameRva;
     if(readDword( s.sectionData,
                   rvaofft+_offset(export_dir_table, NameRVA),
-                  nameRva) == false) 
+                  nameRva) == false)
     {
       PE_ERR(PEERR_READ);
       return NULL;
@@ -691,15 +690,15 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
       return NULL;
     }
 
-    ::uint32_t  nameOff = nameVA - nameSec.sectionBase;
+    uint32_t  nameOff = nameVA - nameSec.sectionBase;
     string      modName;
-    ::uint8_t   c;
+    uint8_t   c;
     do {
       if(readByte(nameSec.sectionData, nameOff, c) == false) {
         PE_ERR(PEERR_READ);
         return NULL;
       }
-      
+
       if(c == 0) {
         break;
       }
@@ -709,7 +708,7 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
     }while(true);
 
     //now, get all the named export symbols
-    ::uint32_t  numNames;
+    uint32_t  numNames;
     if(readDword( s.sectionData,
                   rvaofft+_offset(export_dir_table, NumberOfNamePointers),
                   numNames) == false)
@@ -720,10 +719,10 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
 
     if(numNames > 0) {
       //get the names section
-      ::uint32_t  namesRVA;
+      uint32_t  namesRVA;
       if(readDword( s.sectionData,
                     rvaofft+_offset(export_dir_table, NamePointerRVA),
-                    namesRVA) == false) 
+                    namesRVA) == false)
       {
         PE_ERR(PEERR_READ);
         return NULL;
@@ -745,10 +744,10 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
         return NULL;
       }
 
-      ::uint32_t  namesOff = namesVA - namesSec.sectionBase;
+      uint32_t  namesOff = namesVA - namesSec.sectionBase;
 
       //get the EAT section
-      ::uint32_t  eatRVA;
+      uint32_t  eatRVA;
       if(readDword( s.sectionData,
                     rvaofft+_offset(export_dir_table, ExportAddressTableRVA),
                     eatRVA) == false)
@@ -773,10 +772,10 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
         return NULL;
       }
 
-      ::uint32_t  eatOff = eatVA - eatSec.sectionBase;
+      uint32_t  eatOff = eatVA - eatSec.sectionBase;
 
-      //get the ordinal base 
-      ::uint32_t  ordinalBase;
+      //get the ordinal base
+      uint32_t  ordinalBase;
       if(readDword( s.sectionData,
                     rvaofft+_offset(export_dir_table, OrdinalBase),
                     ordinalBase) == false)
@@ -786,7 +785,7 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
       }
 
       //get the ordinal table
-      ::uint32_t  ordinalTableRVA;
+      uint32_t  ordinalTableRVA;
       if(readDword( s.sectionData,
                     rvaofft+_offset(export_dir_table, OrdinalTableRVA),
                     ordinalTableRVA) == false)
@@ -812,18 +811,18 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
         return NULL;
       }
 
-      ::uint32_t  ordinalOff = ordinalTableVA - ordinalTableSec.sectionBase;
+      uint32_t  ordinalOff = ordinalTableVA - ordinalTableSec.sectionBase;
 
-      for(::uint32_t  i = 0; i < numNames; i++) {
-        ::uint32_t  curNameRVA;
+      for(uint32_t  i = 0; i < numNames; i++) {
+        uint32_t  curNameRVA;
         if(readDword( namesSec.sectionData,
-                      namesOff+(i*sizeof(::uint32_t)),
+                      namesOff+(i*sizeof(uint32_t)),
                       curNameRVA) == false)
         {
           PE_ERR(PEERR_READ);
           return NULL;
         }
- 
+
         VA curNameVA;
         if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_32_MAGIC) {
           curNameVA = curNameRVA + p->peHeader.nt.OptionalHeader.ImageBase;
@@ -841,9 +840,9 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
           return NULL;
         }
 
-        ::uint32_t  curNameOff = curNameVA - curNameSec.sectionBase;
+        uint32_t  curNameOff = curNameVA - curNameSec.sectionBase;
         string      symName;
-        ::uint8_t   d;
+        uint8_t   d;
 
         do {
           if(readByte(curNameSec.sectionData, curNameOff, d) == false) {
@@ -860,30 +859,30 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
         }while(true);
 
         //now, for this i, look it up in the ExportOrdinalTable
-        ::uint16_t  ordinal;
-        if(readWord(ordinalTableSec.sectionData, 
-                    ordinalOff+(i*sizeof(uint16_t)), 
-                    ordinal) == false) 
+        uint16_t  ordinal;
+        if(readWord(ordinalTableSec.sectionData,
+                    ordinalOff+(i*sizeof(uint16_t)),
+                    ordinal) == false)
         {
           PE_ERR(PEERR_READ);
           return NULL;
         }
 
-        //::uint32_t  eatIdx = ordinal - ordinalBase;
-        ::uint32_t  eatIdx = (ordinal*sizeof(uint32_t));
+        //uint32_t  eatIdx = ordinal - ordinalBase;
+        uint32_t  eatIdx = (ordinal*sizeof(uint32_t));
 
-        ::uint32_t  symRVA;
+        uint32_t  symRVA;
         if(readDword(eatSec.sectionData, eatOff+eatIdx, symRVA) == false) {
           PE_ERR(PEERR_READ);
           return NULL;
         }
 
-        bool  isForwarded = 
-          ((symRVA >= exportDir.VirtualAddress) && 
+        bool  isForwarded =
+          ((symRVA >= exportDir.VirtualAddress) &&
           (symRVA < exportDir.VirtualAddress+exportDir.Size));
-        
+
         if(isForwarded == false) {
-          ::uint32_t symVA;
+          uint32_t symVA;
           if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_32_MAGIC) {
             symVA = symRVA + p->peHeader.nt.OptionalHeader.ImageBase;
           } else if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_64_MAGIC) {
@@ -935,20 +934,20 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
       return NULL;
     }
 
-    ::uint32_t  rvaofft = vaAddr - d.sectionBase;
-    ::uint32_t  pageRva;
-    ::uint32_t  blockSize;
+    uint32_t  rvaofft = vaAddr - d.sectionBase;
+    uint32_t  pageRva;
+    uint32_t  blockSize;
 
-    if(readDword( d.sectionData, 
-                  rvaofft+_offset(reloc_block, PageRVA), 
+    if(readDword( d.sectionData,
+                  rvaofft+_offset(reloc_block, PageRVA),
                   pageRva) == false)
     {
       PE_ERR(PEERR_READ);
       return NULL;
     }
-   
-    if(readDword( d.sectionData, 
-                  rvaofft+_offset(reloc_block, BlockSize), 
+
+    if(readDword( d.sectionData,
+                  rvaofft+_offset(reloc_block, BlockSize),
                   blockSize) == false)
     {
       PE_ERR(PEERR_READ);
@@ -956,14 +955,14 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
     }
 
     //iter over all of the blocks
-    ::uint32_t  blockCount = blockSize/sizeof(::uint16_t);
+    uint32_t  blockCount = blockSize/sizeof(uint16_t);
 
     rvaofft += sizeof(reloc_block);
 
     while(blockCount != 0) {
-      ::uint16_t  block;
-      ::uint8_t   type;
-      ::uint16_t  offset;
+      uint16_t  block;
+      uint8_t   type;
+      uint16_t  offset;
 
       if(readWord(d.sectionData, rvaofft, block) == false) {
         PE_ERR(PEERR_READ);
@@ -976,7 +975,7 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
       offset = block & ~0xf000;
 
       //produce the VA of the relocation
-      ::uint32_t relocVA;
+      uint32_t relocVA;
       if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_32_MAGIC) {
         relocVA = pageRva + offset + p->peHeader.nt.OptionalHeader.ImageBase;
       } else if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_64_MAGIC) {
@@ -994,10 +993,10 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
       p->internal->relocs.push_back(r);
 
       blockCount--;
-      rvaofft += sizeof(::uint16_t);
+      rvaofft += sizeof(uint16_t);
     }
   }
-   
+
   //get imports
   data_directory importDir;
   if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_32_MAGIC) {
@@ -1031,7 +1030,7 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
     }
 
     //get import directory from this section
-    ::uint32_t  offt = addr - c.sectionBase;
+    uint32_t  offt = addr - c.sectionBase;
     do {
       //read each directory entry out
       import_dir_entry  curEnt;
@@ -1043,7 +1042,7 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
       READ_DWORD_NULL(c.sectionData, offt, curEnt, AddressRVA);
 
       //are all the fields in curEnt null? then we break
-      if( curEnt.LookupTableRVA == 0 && 
+      if( curEnt.LookupTableRVA == 0 &&
           curEnt.NameRVA == 0 &&
           curEnt.AddressRVA == 0) {
         break;
@@ -1066,15 +1065,15 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
         return NULL;
       }
 
-      ::uint32_t  nameOff = name - nameSec.sectionBase;
+      uint32_t  nameOff = name - nameSec.sectionBase;
       string      modName;
-      ::uint8_t   c;
+      uint8_t   c;
       do {
         if(readByte(nameSec.sectionData, nameOff, c) == false) {
           PE_ERR(PEERR_READ);
           return NULL;
         }
-        
+
         if(c == 0) {
           break;
         }
@@ -1085,7 +1084,7 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
 
       //then, try and get all of the sub-symbols
       VA lookupVA;
-      if(curEnt.LookupTableRVA != 0) { 
+      if(curEnt.LookupTableRVA != 0) {
         if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_32_MAGIC) {
           lookupVA = curEnt.LookupTableRVA + p->peHeader.nt.OptionalHeader.ImageBase;
         } else if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_64_MAGIC) {
@@ -1110,15 +1109,15 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
         PE_ERR(PEERR_SECTVA);
         return NULL;
       }
-      
-      ::uint64_t  lookupOff = lookupVA - lookupSec.sectionBase;
-      ::uint32_t  offInTable = 0;
+
+      uint64_t  lookupOff = lookupVA - lookupSec.sectionBase;
+      uint32_t  offInTable = 0;
       do {
         VA          valVA = 0;
-        ::uint8_t   ord = 0;
-        ::uint16_t  oval = 0;
-        ::uint32_t  val32 = 0;
-        ::uint64_t  val64 = 0;
+        uint8_t   ord = 0;
+        uint16_t  oval = 0;
+        uint32_t  val32 = 0;
+        uint64_t  val64 = 0;
         if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_32_MAGIC) {
           if(readDword(lookupSec.sectionData, lookupOff, val32) == false) {
             PE_ERR(PEERR_READ);
@@ -1155,17 +1154,17 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
             PE_ERR(PEERR_SECTVA);
             return NULL;
           }
-          
-          ::uint32_t  nameOff = valVA - symNameSec.sectionBase;
-          nameOff += sizeof(::uint16_t);
+
+          uint32_t  nameOff = valVA - symNameSec.sectionBase;
+          nameOff += sizeof(uint16_t);
           do {
-            ::uint8_t d;
+            uint8_t d;
 
             if(readByte(symNameSec.sectionData, nameOff, d) == false) {
               PE_ERR(PEERR_READ);
               return NULL;
             }
-            
+
             if(d == 0) {
               break;
             }
@@ -1190,9 +1189,9 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
           ent.moduleName = modName;
           p->internal->imports.push_back(ent);
         } else {
-          string      symName = 
+          string      symName =
             "ORDINAL_" + modName + "_" + to_string<uint32_t>(oval, dec);
-          
+
           importent ent;
 
           if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_32_MAGIC) {
@@ -1203,19 +1202,19 @@ parsed_pe *ParsePEFromFile(const char *filePath) {
             PE_ERR(PEERR_MAGIC);
             return NULL;
           }
-          
+
           ent.symbolName = symName;
           ent.moduleName = modName;
 
           p->internal->imports.push_back(ent);
         }
-        
+
         if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_32_MAGIC) {
-          lookupOff += sizeof(::uint32_t);
-          offInTable += sizeof(::uint32_t);
+          lookupOff += sizeof(uint32_t);
+          offInTable += sizeof(uint32_t);
         } else if (p->peHeader.nt.OptionalMagic == NT_OPTIONAL_64_MAGIC) {
-          lookupOff += sizeof(::uint64_t);
-          offInTable += sizeof(::uint64_t);
+          lookupOff += sizeof(uint64_t);
+          offInTable += sizeof(uint64_t);
         } else {
           PE_ERR(PEERR_MAGIC);
           return NULL;
@@ -1301,7 +1300,7 @@ void IterSec(parsed_pe *pe, iterSec cb, void *cbd) {
   return;
 }
 
-bool ReadByteAtVA(parsed_pe *pe, VA v, ::uint8_t &b) {
+bool ReadByteAtVA(parsed_pe *pe, VA v, uint8_t &b) {
   //find this VA in a section
   section s;
 
@@ -1310,7 +1309,7 @@ bool ReadByteAtVA(parsed_pe *pe, VA v, ::uint8_t &b) {
     return false;
   }
 
-  ::uint32_t  off = v - s.sectionBase;
+  uint32_t  off = v - s.sectionBase;
 
   return readByte(s.sectionData, off, b);
 }

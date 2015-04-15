@@ -29,13 +29,13 @@ THE SOFTWARE.
 #ifdef WIN32
 #include <windows.h>
 #else
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #endif
 
-using namespace boost;
 using namespace std;
 
 extern ::uint32_t err;
@@ -115,12 +115,12 @@ bool readQword(bounded_buffer *b, ::uint32_t offset, ::uint64_t &out) {
 
 bounded_buffer *readFileToFileBuffer(const char *filePath) {
 #ifdef WIN32
-  HANDLE  h = CreateFileA(filePath, 
-                          GENERIC_READ, 
-                          0, 
-                          NULL, 
-                          OPEN_EXISTING, 
-                          FILE_ATTRIBUTE_NORMAL, 
+  HANDLE  h = CreateFileA(filePath,
+                          GENERIC_READ,
+                          0,
+                          NULL,
+                          OPEN_EXISTING,
+                          FILE_ATTRIBUTE_NORMAL,
                           NULL);
   if(h == INVALID_HANDLE_VALUE) {
     return NULL;
@@ -227,7 +227,7 @@ bounded_buffer *splitBuffer(bounded_buffer *b, ::uint32_t from, ::uint32_t to) {
   if(to < from || to > b->bufLen) {
     return NULL;
   }
-  
+
   //make a new buffer
   bounded_buffer  *newBuff = new bounded_buffer();
 
@@ -263,6 +263,6 @@ void deleteBuffer(bounded_buffer *b) {
   return;
 }
 
-uint64_t bufLen(bounded_buffer *b) {
+std::uint64_t bufLen(bounded_buffer *b) {
   return b->bufLen;
 }
